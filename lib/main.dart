@@ -63,11 +63,9 @@ class LucidApp extends StatelessWidget {
         secondary: Color(0xFF03DAC6),
         tertiary: Color(0xFFFF6B9D),
         surface: Color(0xFF1A1A1A),
-        background: Color(0xFF0A0A0A),
         onPrimary: Colors.white,
         onSecondary: Colors.black,
         onSurface: Colors.white,
-        onBackground: Colors.white,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

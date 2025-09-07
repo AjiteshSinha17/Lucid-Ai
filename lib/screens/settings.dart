@@ -96,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 30),
 
               // Sign out button
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => authService.signOut(),

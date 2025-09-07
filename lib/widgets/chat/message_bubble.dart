@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/chat_message.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -17,7 +18,8 @@ class MessageBubble extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) _buildAvatar(),
@@ -40,26 +42,59 @@ class MessageBubble extends StatelessWidget {
                         ],
                       ),
                 borderRadius: BorderRadius.circular(16).copyWith(
-                  topLeft: isUser ? const Radius.circular(16) : const Radius.circular(4),
-                  topRight: isUser ? const Radius.circular(4) : const Radius.circular(16),
+                  topLeft: isUser
+                      ? const Radius.circular(16)
+                      : const Radius.circular(4),
+                  topRight: isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(16),
                 ),
-                border: !isUser ? Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                ) : null,
+                border: !isUser
+                    ? Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                      )
+                    : null,
               ),
               child: message.isMarkdown && !isUser
                   ? MarkdownBody(
                       data: message.content,
                       styleSheet: MarkdownStyleSheet(
                         p: const TextStyle(color: Colors.white, fontSize: 16),
-                        h1: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                        h2: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                        h3: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        h1: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold),
+                        h2: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
+                        h3: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        a: const TextStyle(
+                          color: Color(0xFF03DAC6),
+                          decoration: TextDecoration.underline,
+                        ),
                         code: TextStyle(
                           backgroundColor: Colors.black.withOpacity(0.3),
                           color: const Color(0xFF03DAC6),
                         ),
                       ),
+                      onTapLink: (text, href, title) async {
+                        if (href == null || href.isEmpty) return;
+                        final uri = Uri.tryParse(href);
+                        if (uri == null) return;
+                        // Prefer opening externally (browser) so PDFs can be downloaded
+                        if (!await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        )) {
+                          // Fallback to platform default if external fails
+                          await launchUrl(uri,
+                              mode: LaunchMode.platformDefault);
+                        }
+                      },
                     )
                   : Text(
                       message.content,
@@ -85,7 +120,7 @@ class MessageBubble extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isUser 
+          colors: isUser
               ? [Colors.white.withOpacity(0.8), Colors.white.withOpacity(0.6)]
               : [const Color(0xFF6C63FF), const Color(0xFF03DAC6)],
         ),
