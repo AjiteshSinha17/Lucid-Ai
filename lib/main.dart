@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' as rvd;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/auth/landing_screen.dart';
 import 'screens/chat.dart';
-import 'services/ai_provider.dart';
+// Riverpod AI provider is consumed in feature screens; no import needed here
 import 'services/auth_service.dart';
 import 'services/roadmap_service.dart';
 import 'firebase_options.dart';
@@ -24,7 +25,7 @@ void main() async {
   } catch (e) {
     debugPrint('dotenv load failed: $e');
   }
-  runApp(const LucidApp());
+  runApp(const rvd.ProviderScope(child: LucidApp()));
 }
 
 class LucidApp extends StatelessWidget {
@@ -32,11 +33,10 @@ class LucidApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
+    return provider.MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => AIProvider()),
-        ChangeNotifierProvider(create: (_) => RoadmapService()),
+        provider.ChangeNotifierProvider(create: (_) => AuthService()),
+        provider.ChangeNotifierProvider(create: (_) => RoadmapService()),
       ],
       child: MaterialApp(
         title: 'Lucid AI Chatbot',
@@ -84,7 +84,7 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthService>(
+    return provider.Consumer<AuthService>(
       builder: (context, authService, child) {
         if (authService.user != null) {
           return const ChatScreen();

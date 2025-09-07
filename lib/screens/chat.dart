@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' as rvd;
 import 'package:animate_do/animate_do.dart';
 import '../widgets/chat/chat_input.dart';
 import '../widgets/chat/message_bubble.dart';
@@ -21,7 +22,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AIProvider>().addWelcomeMessage();
+      final container = rvd.ProviderScope.containerOf(context);
+      container.read(aiProvider.notifier).addWelcomeMessage();
     });
   }
 
@@ -86,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           const Icon(Icons.psychology_rounded, size: 24),
           const SizedBox(width: 12),
-          Consumer<AuthService>(
+          provider.Consumer<AuthService>(
             builder: (context, authService, child) {
               final displayName = authService.user?.displayName;
               final firstName = (displayName == null || displayName.isEmpty)
@@ -117,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       actions: [
-        Consumer<AuthService>(
+        provider.Consumer<AuthService>(
           builder: (context, authService, child) {
             return PopupMenuButton(
               icon: CircleAvatar(
@@ -144,10 +146,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildChatMessages() {
-    return Consumer<AIProvider>(
-      builder: (context, aiProvider, child) {
+    return rvd.Consumer(
+      builder: (context, ref, child) {
+        final aiState = ref.watch(aiProvider);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (aiProvider.autoScroll) {
+          if (aiState.autoScroll) {
             _scrollToBottom();
           }
         });
@@ -155,9 +158,9 @@ class _ChatScreenState extends State<ChatScreen> {
         return ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
-          itemCount: aiProvider.messages.length,
+          itemCount: aiState.messages.length,
           itemBuilder: (context, index) {
-            final message = aiProvider.messages[index];
+            final message = aiState.messages[index];
             return FadeInUp(
               delay: Duration(milliseconds: index * 50),
               child: MessageBubble(message: message),
@@ -176,11 +179,13 @@ class _ChatScreenState extends State<ChatScreen> {
         if (roadmapService.isRoadmapQuery(message)) {
           final roadmapResponse =
               roadmapService.generateDetailedRoadmapResponse(message);
-          await context
-              .read<AIProvider>()
+          final container = rvd.ProviderScope.containerOf(context);
+          await container
+              .read(aiProvider.notifier)
               .sendRoadmapMessage(message, roadmapResponse);
         } else {
-          await context.read<AIProvider>().sendMessage(message);
+          final container = rvd.ProviderScope.containerOf(context);
+          await container.read(aiProvider.notifier).sendMessage(message);
         }
 
         _scrollToBottom();

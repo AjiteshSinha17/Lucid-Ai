@@ -1,21 +1,17 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/chat_message.dart';
+import 'ai_state.dart';
 
-class AIProvider extends ChangeNotifier {
-  final List<ChatMessage> _messages = [];
-  bool _isLoading = false;
-  bool _autoScroll = true;
-
-  List<ChatMessage> get messages => _messages;
-  bool get isLoading => _isLoading;
-  bool get autoScroll => _autoScroll;
+class AiNotifier extends StateNotifier<AiState> {
+  AiNotifier() : super(const AiState());
 
   void addWelcomeMessage() {
-    if (_messages.isEmpty) {
-      _messages.add(
+    if (state.messages.isEmpty) {
+      final nextMessages = [
+        ...state.messages,
         ChatMessage.ai(
           '''# 🌟 Welcome to Lucid AI!
 
@@ -34,48 +30,58 @@ I'm your intelligent learning companion, ready to help you with:
 Ready to start your learning journey? 🚀''',
           isMarkdown: true,
         ),
-      );
-      notifyListeners();
+      ];
+      state = state.copyWith(messages: nextMessages);
     }
   }
 
   Future<void> sendMessage(String message) async {
     if (message.trim().isEmpty) return;
 
-    _messages.add(ChatMessage.user(message));
-    _setLoading(true);
-    _autoScroll = true;
-    notifyListeners();
+    state = state.copyWith(
+      messages: [...state.messages, ChatMessage.user(message)],
+      isLoading: true,
+      autoScroll: true,
+    );
 
     try {
       final response = await _getAIResponse(message);
-      _messages.add(ChatMessage.ai(response, isMarkdown: true));
+      state = state.copyWith(
+        messages: [
+          ...state.messages,
+          ChatMessage.ai(response, isMarkdown: true),
+        ],
+      );
     } catch (e) {
-      _messages.add(
-        ChatMessage.ai(
-          'I apologize, but I encountered an error processing your request. Please try again or check your connection.',
-        ),
+      state = state.copyWith(
+        messages: [
+          ...state.messages,
+          ChatMessage.ai(
+            'I apologize, but I encountered an error processing your request. Please try again or check your connection.',
+          ),
+        ],
       );
     }
 
-    _setLoading(false);
-    notifyListeners();
+    state = state.copyWith(isLoading: false);
   }
 
-  Future<void> sendRoadmapMessage(String userMessage, String roadmapResponse) async {
+  Future<void> sendRoadmapMessage(
+      String userMessage, String roadmapResponse) async {
     if (userMessage.trim().isEmpty) return;
 
-    _messages.add(ChatMessage.user(userMessage));
-    _setLoading(true);
-    _autoScroll = true;
-    notifyListeners();
+    state = state.copyWith(
+      messages: [...state.messages, ChatMessage.user(userMessage)],
+      isLoading: true,
+      autoScroll: true,
+    );
 
-    // Simulate processing delay
     await Future.delayed(const Duration(milliseconds: 800));
 
-    _messages.add(ChatMessage.roadmap(roadmapResponse));
-    _setLoading(false);
-    notifyListeners();
+    state = state.copyWith(
+      messages: [...state.messages, ChatMessage.roadmap(roadmapResponse)],
+      isLoading: false,
+    );
   }
 
   Future<String> _getAIResponse(String message) async {
@@ -97,7 +103,8 @@ Ready to start your learning journey? 🚀''',
           'messages': [
             {
               'role': 'system',
-              'content': '''You are Lucid AI, an intelligent assistant specializing in developer education and career guidance. 
+              'content':
+                  '''You are Lucid AI, an intelligent assistant specializing in developer education and career guidance. 
 
 Key instructions:
 - Provide helpful, accurate information about programming, development, and technology careers
@@ -174,18 +181,14 @@ Feel free to ask me anything about technology and development! 🚀''';
   }
 
   void clearMessages() {
-    _messages.clear();
+    state = const AiState();
     addWelcomeMessage();
-    notifyListeners();
-  }
-
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
   }
 
   void setAutoScroll(bool autoScroll) {
-    _autoScroll = autoScroll;
-    notifyListeners();
+    state = state.copyWith(autoScroll: autoScroll);
   }
 }
+
+final aiProvider =
+    StateNotifierProvider<AiNotifier, AiState>((ref) => AiNotifier());
